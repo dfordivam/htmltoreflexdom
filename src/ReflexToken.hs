@@ -11,7 +11,7 @@ import Data.Either
 import Data.Monoid
 import qualified Data.Map as Map
 import qualified Data.List as List
-
+import Text.Read (readMaybe)
 import Text.HTML.TagSoup.Tree
 import Text.HTML.TagSoup
 
@@ -24,22 +24,25 @@ data ReflexToken =
 data InputType =
   TextInput (Maybe Text) (Maybe Text)
   | Area Text
-  | Range Float
+  | Range (Maybe Float)
   | CheckBox Bool
   | FileInput
-  | DropDown
+  | DropDown (Maybe Text) [(Text, Text)]
   | Button
   deriving (Eq, Ord, Show)
 
 pattern TextArea1 a t = (TagBranch "textarea" a [(TagLeaf (TagText t))])
 pattern TextArea2 a = (TagBranch "textarea" a [])
 
-pattern TextInput1 a = (TagBranch "input" a [])
+pattern InputElement1 a = (TagBranch "input" a [])
+
+pattern SelectElement1 a opts = (TagBranch "select" a opts)
+pattern OptionElement1 a t = (TagBranch "option" a [(TagLeaf (TagText t))])
 
 parseToTokens :: Text -> ([TagTree Text], Either [Text] [ReflexToken])
 parseToTokens inp = (tree, toRT tree)
   where
-    tree = parseTree inp
+    tree = transformTree transformF $ parseTree inp
 
     toRT ts = case (lefts es) of
                 [] -> Right $ catMaybes (rights es)
@@ -52,7 +55,10 @@ parseToTokens inp = (tree, toRT tree)
       RTInput (Area t) (Map.fromList a)
     toRT' (TextArea2 a) = Right $ Just $
       RTInput (Area "") (Map.fromList a)
-    toRT' (TextInput1 a) = getInputRT a
+    toRT' (InputElement1 a) = getInputRT a
+
+    toRT' (SelectElement1 a []) = Left ["Select without option elements"]
+    toRT' (SelectElement1 a opts) = getSelectOpts a opts
 
     toRT' (TagBranch e a cs) = case (toRT cs) of
       (Right es) -> Right $ Just $
@@ -65,11 +71,6 @@ parseToTokens inp = (tree, toRT tree)
 
     toRT' (TagLeaf (TagOpen e a)) = case e of
       "input" -> getInputRT a
-
-        -- _ -> Right $ Just $
-        --   RTElement e (Map.fromList a) []
-      -- _ -> Right $ Just $
-      --   RTElement e (Map.fromList a) []
 
     toRT' (TagLeaf (TagComment _)) = Right $ Nothing
     toRT' (TagLeaf (TagClose e)) = Left $
@@ -86,6 +87,17 @@ getInputRT a = case (List.lookup "type" a) of
       c = maybe False (const True) $ List.lookup "checked" a
       a2 = filter (\(k,_) -> not ((k == "type") || (k == "checked"))) a
 
+  (Just "range") -> Right $ Just $
+    RTInput (Range r) (Map.fromList a2)
+    where
+      r = readMaybe . T.unpack =<< List.lookup "value" a
+      a2 = filter (\(k,_) -> not ((k == "type") || (k == "value"))) a
+
+  (Just "file") -> Right $ Just $
+    RTInput (FileInput) (Map.fromList a2)
+    where
+      a2 = filter (((/=) "type") . fst) a
+
   (Just t) -> Right $ Just $
     RTInput (TextInput t1 ph) (Map.fromList a2)
     where
@@ -93,5 +105,31 @@ getInputRT a = case (List.lookup "type" a) of
       ph = List.lookup "placeholder" a
       a2 = filter (\(k,_) -> not ((k == "type") || (k == "placeholder"))) a
 
+getSelectOpts a os = case (lefts os2) of
+  [] -> Right $ Just $
+    RTInput (DropDown sel opts) (Map.fromList a)
+  es -> Left es
+  where
+    sel = case (filter fst $ rights os2) of
+      ((_,(k,_)):_) -> Just k
+      _ -> Nothing
+    os2 = map getOpt os
+    opts = map snd $ rights os2
+    getOpt (OptionElement1 a t) = Right (s, (v,t))
+      where v = maybe "" id (List.lookup "value" a)
+            s = maybe False (const True) (List.lookup "selected" a)
+    getOpt _ = Left "Invalid Select option value"
+
 tshow :: (Show a) => a -> Text
 tshow = T.pack . show
+
+transformF (TagBranch t a ts) = [TagBranch (T.toCaseFold t) a ts]
+  where
+    anew = map (\(k,v) -> (T.toCaseFold k, v)) a
+
+transformF a@(TagLeaf t) = case t of
+  (TagText t) -> if T.null (T.strip t) then [] else [a]
+  (TagOpen t a) -> [TagLeaf (TagOpen (T.toCaseFold t) anew)]
+    where
+      anew = map (\(k,v) -> (T.toCaseFold k, v)) a
+  _ -> [a]

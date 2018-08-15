@@ -86,3 +86,40 @@ renderRT (RTInput (CheckBox c) a) =
     attrLet = text "let" <+> attrName <+> "="
       <+> text "def &" <+> parens ("checkboxConfig_attributes .~"
         <+> constDyn (text (show a)))
+
+renderRT (RTInput (Range r) a) =
+  attrLet $$
+  (el <+> attrName)
+  where
+    el = text "rangeInput"
+    attrName = txt ("riConf")
+    attrLet = text "let" <+> attrName <+> "="
+      <+> text "def &" <+> parens ("rangeInputConfig_attributes .~"
+        <+> constDyn (text (show a)))
+      <+> maybe empty (\t -> text "&" <+> parens ("rangeInputConfig_initialValue .~" <+> (doubleQuotes (text (show t))))) r
+
+renderRT (RTInput (FileInput) a) =
+  attrLet $$
+  (el <+> attrName)
+  where
+    el = text "fileInput"
+    attrName = txt ("fiConf")
+    attrLet = text "let" <+> attrName <+> "="
+      <+> text "def &" <+> parens ("fileInputConfig_attributes .~"
+        <+> constDyn (text (show a)))
+
+renderRT (RTInput (DropDown sel opts) a) =
+  attrLet $$
+  (el <+> k <+> dmap <+> conf)
+  where
+    el = text "dropdown"
+    k = case (sel, opts) of
+      (Just s, _) -> dq s
+      (Nothing, ((k,_):_)) -> dq k
+
+    dmap = txt ("ddVals")
+    conf = txt ("ddConf")
+    attrLet = letBlk [(conf, confVal), (dmap, dmapVal)]
+    confVal = text "def &" <+> parens ("fileInputConfig_attributes .~"
+        <+> constDyn (text (show a)))
+    dmapVal = constDyn (text "fromList" <+> (text $ show opts))
