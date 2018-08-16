@@ -23,12 +23,19 @@ topWidget = do
 
   ta <- divClass "" $ do
     textArea $ def &
-      textAreaConfig_attributes .~ (constDyn ("rows" =: "10"))
+      textAreaConfig_attributes .~ (constDyn ("rows" =: "20"))
 
-  let v = parseToTokens <$> (value ta)
+  let
+    v = parseToTokens <$> (value ta)
+    d (Left e) = "Error in parse: " <> (T.intercalate ", " e)
+    d (Right t) = T.pack $ render (renderReflexTree t)
+
+  divClass "" $ do
+    textArea $ def
+      & textAreaConfig_attributes .~ (constDyn ("rows" =: "20"))
+      & textAreaConfig_setValue .~ (updated (d . snd <$> v))
+
   elClass "pre" "" $ do
-    let d (Left e) = "Error in parse: " <> (T.intercalate ", " e)
-        d (Right t) = T.pack $ render (renderReflexTree t)
     dynText (d . snd <$> v)
 
   elClass "pre" "" $ do

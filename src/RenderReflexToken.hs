@@ -19,7 +19,7 @@ import Text.HTML.TagSoup.Tree
 import Text.HTML.TagSoup
 
 renderReflexTree [] = text "No input"
-renderReflexTree ts = vcat $ evalState (mapM renderRT ts) init
+renderReflexTree ts = nest 2 $ vcat $ evalState (mapM renderRT ts) init
   where init = 1
 
 type RM = State Int
@@ -74,7 +74,7 @@ renderRT (RTElement e a cs) = do
          else return (text "elClass" <+> (dq e) <+> (dq c), [])
       _ -> do
         attrName <- getName "attr"
-        return (text "elAttr" <+> attrName, [(attrName, renderAttrs a)])
+        return (text "elAttr" <+> dq e <+> attrName, [(attrName, renderAttrs a)])
 
   es <- mapM renderRT cs
   return $
@@ -107,7 +107,7 @@ renderRT (RTInput (TextInput tp ph) a) = do
 
     it = maybe empty dq tp
     iv = maybe empty dq ph
-    el = text "textArea" <+> confName
+    el = text "textInput" <+> confName
     ls = [(confName, conf), (attrName, renderAttrs a)]
   return $
     letBlk ls $$
@@ -131,7 +131,7 @@ renderRT (RTInput (Range r) a) = do
   let
     conf = defOvrd [("rangeInputConfig_attributes", constDyn attrName)
                    , ("rangeInputConfig_initialValue", iv)]
-    iv = maybe empty (\t -> doubleQuotes (text (show t))) r
+    iv = maybe empty float r
     ls = [(confName, conf), (attrName, renderAttrs a)]
     el = text "rangeInput" <+> confName
   return $
@@ -142,7 +142,7 @@ renderRT (RTInput (FileInput) a) = do
   (fi, confName) <- getName2 "fi" "fiConf"
   attrName <- getName "attr"
   let
-    conf = defOvrd [("fileInputConfig_attributes", constDyn attrName)]
+    conf = text "FileInputConfig" <+> parens (constDyn attrName)
     ls = [(confName, conf), (attrName, renderAttrs a)]
     el = text "fileInput" <+> confName
   return $
@@ -180,4 +180,9 @@ renderRT (RTInput (Button v) a) = do
   return $
     letBlk ls $$
     e <-- el `do'` es $$
-    letBlk [(ev, text "domEvent Click" <+> eName)]
+    commented (letBlk [(ev, text "domEvent Click" <+> eName)])
+
+commented :: Doc -> Doc
+commented a = text "{-" $$
+  (nest 2 a) $$
+  text "-}"
