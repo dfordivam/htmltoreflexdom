@@ -13,31 +13,57 @@ import Text.PrettyPrint (render)
 import Data.Monoid
 
 main :: IO ()
-main = debugAndWait 3911 $ mainWidget topWidget
+main = debugAndWait 3911 $
+    mainWidgetWithHead'
+      (const headWidget
+      , const topWidget)
+
+headWidget :: MonadWidget t m => m ()
+headWidget = do
+  let
+  elAttr "meta" (("charset" =: "utf-8"))
+    $ return ()
+
+  elAttr "link"
+    (("rel" =: "stylesheet")
+      <> ("href" =: "https://cdn.rawgit.com/Chalarangelo/mini.css/v3.0.0/dist/mini-default.min.css"))
+    $ return ()
 
 debugAndWait p f = debug p f >> forever (threadDelay $ 1000 * 1000)
 
 topWidget :: Widget t ()
-topWidget = do
-  text "Enter HTML here"
-
-  ta <- divClass "" $ do
-    textArea $ def &
-      textAreaConfig_attributes .~ (constDyn ("rows" =: "20"))
+topWidget = divClass "container" $ do
+  divClass "header" $
+    text "Convert HTML to Reflex-DOM Code"
 
   let
-    v = parseToTokens <$> (value ta)
     d (Left e) = "Error in parse: " <> (T.intercalate ", " e)
     d (Right t) = T.pack $ render (renderReflexTree t)
 
-  divClass "" $ do
-    textArea $ def
-      & textAreaConfig_attributes .~ (constDyn ("rows" =: "20"))
-      & textAreaConfig_setValue .~ (updated (d . snd <$> v))
+  v <- divClass "row" $ do
+    let taAttr ph = def &
+          textAreaConfig_attributes .~ (constDyn
+            (("rows" =: "20")
+            <> ("placeholder" =: ph)
+             <> ("style" =: "width: 100%;")))
+    ta <- divClass "col-sm-6" $ do
+      textArea $ taAttr "Enter HTML Here"
 
-  elClass "pre" "" $ do
-    dynText (d . snd <$> v)
+    let
+      v = parseToTokens <$> (value ta)
 
-  elClass "pre" "" $ do
-    dynText ((TL.toStrict . pShowNoColor) <$> v)
+    divClass "col-sm-6" $ do
+      textArea $ taAttr "Reflex Code Output"
+        & textAreaConfig_setValue .~ (updated (d . snd <$> v))
+    return v
+
+  let
+    showDebug = divClass "row" $ do
+      elClass "pre" "" $ do
+        dynText ((TL.toStrict . pShowNoColor) <$> v)
+
+  ev <- button "Show debug info"
+  widgetHold (return ())
+    (showDebug <$ ev)
+  return ()
 
