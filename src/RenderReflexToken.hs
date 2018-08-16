@@ -13,6 +13,7 @@ import Data.Maybe
 import Data.Either
 import qualified Data.Monoid as Monoid
 import qualified Data.Map as Map
+import qualified Data.List as List
 import Control.Monad.State
 import Text.HTML.TagSoup.Tree
 import Text.HTML.TagSoup
@@ -46,7 +47,7 @@ defOvrd os = "def" $$ nest 0 (vcat $ map f os)
 do' a [] = a <+> "$ return ()"
 do' a b = (a <+> "$ do") $$
   (nest 2 (vcat b $$
-  text "return ()"))
+    text "return ()"))
 
 getName t = do
   v <- state (\i -> (i, i+1))
@@ -56,7 +57,11 @@ getName2 t1 t2 = do
   v <- state (\i -> (i, i+1))
   return $ (text $ t1 ++ (show v), text $ t2 ++ (show v))
 
-renderAttrs a = text (show a)
+renderAttrs a = if Map.null a
+  then text "Map.empty"
+  else fsep $ List.intersperse (text "<>") $ map f $ Map.toList a
+  where
+    f (k,v) = parens (dq k <+> "=:" <+> dq v)
 
 renderRT :: ReflexToken -> RM Doc
 renderRT (RTText t) = return $ text "text" <+> (dq t)
@@ -154,7 +159,7 @@ renderRT (RTInput (DropDown sel opts) a) = do
       (Just s, _) -> dq s
       (Nothing, ((k,_):_)) -> dq k
 
-    optDoc = renderAttrs opts
+    optDoc = renderAttrs $ Map.fromList opts
     conf = defOvrd [("dropdownConfig_attributes", constDyn attrName)]
     ls = [(confName, conf), (attrName, renderAttrs a)
          , (optMapName, optDoc)]
@@ -169,10 +174,10 @@ renderRT (RTInput (Button v) a) = do
   let
     ls = [(attrName, renderAttrs a)]
     el = text "elAttr'" <+> dq "button" <+> attrName
-    e = parens (eName <+> ",_")
+    e = parens (eName <> ",_")
 
   es <- mapM renderRT v
   return $
     letBlk ls $$
     e <-- el `do'` es $$
-    letBlk [(ev, text "domEvent Click" <> eName)]
+    letBlk [(ev, text "domEvent Click" <+> eName)]
