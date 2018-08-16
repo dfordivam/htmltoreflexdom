@@ -87,9 +87,8 @@ getInputRT a = case (List.lookup "type" a) of
   (Just "button") -> Right $ Just $
     RTInput (Button v) (Map.fromList a2)
     where
-      c = maybe False (const True) $ List.lookup "disabled" a
       v = maybe [] ((:[]) . RTText) $ List.lookup "value" a
-      a2 = filter (\(k,_) -> not ((k == "type") || (k == "value") || (k == "disabled"))) a
+      a2 = filter (\(k,_) -> not ((k == "type") || (k == "value"))) a
 
   (Just "checkbox") -> Right $ Just $
     RTInput (CheckBox c) (Map.fromList a2)
