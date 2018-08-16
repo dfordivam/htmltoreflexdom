@@ -28,12 +28,13 @@ library
                        , text
                        , containers
                        , tagsoup
-                       , pretty-simple
                        , pretty
                        , reflex
                        , reflex-dom-core
+                       , reflex-dom
                        , mtl
-                       , jsaddle-warp
+                       -- , pretty-simple
+                       -- , jsaddle-warp
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -43,6 +44,6 @@ executable htmltoreflexdom
   -- other-extensions:
   build-depends:       base >=4.9 && <5
                        , htmltoreflexdom
-                       , jsaddle-warp
+                       -- , jsaddle-warp
   hs-source-dirs:      app
   default-language:    Haskell2010

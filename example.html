@@ -1,0 +1,108 @@
+<form id="app-login" action="process.php">
+    <fieldset>
+        <legend class="lclass">login details</legend>
+        <div>
+            <label for="user-name">username:</label>
+            <input name="user-name" type="email" placeholder="your username is your email address" required autofocus>
+
+        </div>
+        <div>
+            <label for="password">password:</label>
+            <input name="password" type="password" placeholder="6 digits, a combination of numbers and letters" required>
+        </div>
+        <div class="divc1">
+            <input name="login" type="submit" value="login">
+        </div>
+    </fieldset>
+</form>
+<fieldset>
+    <legend>choose some monster features</legend>
+
+    <div>
+        <input type="checkbox" id="scales" name="feature"
+               value="scales" checked />
+        <label for="scales">scales</label>
+    </div>
+
+    <div>
+        <input type="checkbox" id="horns" name="feature"
+               value="horns" />
+        <label for="horns">horns</label>
+    </div>
+
+    <div>
+        <input type="checkbox" id="claws" name="feature"
+               value="claws" />
+        <label for="claws">claws</label>
+    </div>
+
+</fieldset>
+<fieldset>
+    <legend>audio settings</legend>
+
+    <label for="volume">volume</label>
+    <input type="range" id="start" name="volume"
+           min="0" max="11" />
+
+    <label for="cowbell">cowbell</label>
+    <input type="range" id="cowbell" name="cowbell" 
+           min="0" max="100" value="90" step="2" />
+
+</fieldset>
+<fieldset>
+    <legend>profile</legend>
+
+    <div>
+        <label for="name">display name:</label>
+        <input type="text" id="name" name="name"/>
+    </div>
+
+    <div>
+        <label for="avatar">profile picture:</label>
+        <input type="file"
+               id="avatar" name="avatar"
+               accept="image/png, image/jpeg" />
+    </div>
+
+</fieldset>
+<label for="pet-select">choose a pet:</label>
+
+<select id="pet-select">
+    <option value="">--please choose an option--</option>
+    <option value="dog">dog</option>
+    <option value="cat">cat</option>
+    <option value="hamster" selected>hamster</option>
+    <option value="parrot">parrot</option>
+    <option value="spider">spider</option>
+    <option value="goldfish">goldfish</option>
+</select>
+
+<footer>
+    photo by ricky kharawala<br/> on unsplash
+</footer>
+<p><button>default button</button></p>
+
+<p><button disabled>disabled button</button></p>
+
+<p>
+    <button name="submit" type="submit" value="submit-true">
+        form submit button
+    </button>
+</p>
+
+<p><button accesskey="a">button with <u>a</u>ccesskey</button></p>
+
+<p><button class="styled">fancy styled button</button></p>
+
+<fieldset>
+    <legend>input button</legend>
+    <form>
+        <p> default button: <input type="button" class="btn" value="click me" /> </p>
+
+        <p> disabled button: <input type="button" class="btn" value="i am disabled" disabled /> </p>
+
+        <p>button with <u><b>a</b></u>ccesskey: <input type="button" class="btn" value="accesskey enabled" accesskey="a" /></p>
+
+        <p>button without style: <input type="button" value="i'm a basic button" /></p>
+    </form>
+</fieldset>

@@ -1,10 +1,8 @@
 module TopWidget (topWidget) where
 
-import Reflex.Dom.Core
-import Language.Javascript.JSaddle.Warp
+import Reflex.Dom
 import Control.Concurrent
 import Control.Monad
-import Text.Pretty.Simple
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text as T
 import ReflexToken
@@ -12,11 +10,17 @@ import RenderReflexToken
 import Text.PrettyPrint (render)
 import Data.Monoid
 
-main :: IO ()
-main = debugAndWait 3911 $
+-- import Text.Pretty.Simple
+-- import Language.Javascript.JSaddle.Warp
+
+-- debugAndWait p f = debug p f >> forever (threadDelay $ 1000 * 1000)
+
+topWidget :: IO ()
+topWidget =
+  -- debugAndWait 3911 $
     mainWidgetWithHead'
       (const headWidget
-      , const topWidget)
+      , const bodyWidget)
 
 headWidget :: MonadWidget t m => m ()
 headWidget = do
@@ -29,10 +33,9 @@ headWidget = do
       <> ("href" =: "https://cdn.rawgit.com/Chalarangelo/mini.css/v3.0.0/dist/mini-default.min.css"))
     $ return ()
 
-debugAndWait p f = debug p f >> forever (threadDelay $ 1000 * 1000)
 
-topWidget :: Widget t ()
-topWidget = divClass "container" $ do
+bodyWidget :: Widget t ()
+bodyWidget = divClass "container" $ do
   divClass "header" $
     text "Convert HTML to Reflex-DOM Code"
 
@@ -60,7 +63,8 @@ topWidget = divClass "container" $ do
   let
     showDebug = divClass "row" $ do
       elClass "pre" "" $ do
-        dynText ((TL.toStrict . pShowNoColor) <$> v)
+        -- dynText ((TL.toStrict . pShowNoColor) <$> v)
+        dynText (tshow <$> v)
 
   ev <- button "Show debug info"
   widgetHold (return ())
