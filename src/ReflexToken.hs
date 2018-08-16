@@ -74,6 +74,9 @@ parseToTokens inp = (tree, toRT tree)
 
     toRT' (TagLeaf (TagOpen e a)) = case e of
       "input" -> getInputRT a
+      _ ->  Right $ Just $
+        RTElement e (Map.fromList a) []
+      -- _ -> Left ["Misplaced open tag?: " <> e]
 
     toRT' (TagLeaf (TagComment _)) = Right $ Nothing
     toRT' (TagLeaf (TagClose e)) = Left $
@@ -107,10 +110,10 @@ getInputRT a = case (List.lookup "type" a) of
     where
       a2 = filter (((/=) "type") . fst) a
 
-  (Just t) -> Right $ Just $
+  mbt -> Right $ Just $
     RTInput (TextInput t1 ph) (Map.fromList a2)
     where
-      t1 = if t == "text" then Nothing else Just t
+      t1 = (\t -> if t == "text" then Nothing else Just t) =<< mbt
       ph = List.lookup "placeholder" a
       a2 = filter (\(k,_) -> not ((k == "type") || (k == "placeholder"))) a
 
