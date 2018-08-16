@@ -28,7 +28,7 @@ data InputType =
   | CheckBox Bool
   | FileInput
   | DropDown (Maybe Text) [(Text, Text)]
-  | Button
+  | Button ([ReflexToken])
   deriving (Eq, Ord, Show)
 
 pattern TextArea1 a t = (TagBranch "textarea" a [(TagLeaf (TagText t))])
@@ -38,6 +38,8 @@ pattern InputElement1 a = (TagBranch "input" a [])
 
 pattern SelectElement1 a opts = (TagBranch "select" a opts)
 pattern OptionElement1 a t = (TagBranch "option" a [(TagLeaf (TagText t))])
+
+pattern ButtonElement1 a e = (TagBranch "button" a e)
 
 parseToTokens :: Text -> ([TagTree Text], Either [Text] [ReflexToken])
 parseToTokens inp = (tree, toRT tree)
@@ -57,6 +59,9 @@ parseToTokens inp = (tree, toRT tree)
       RTInput (Area "") (Map.fromList a)
     toRT' (InputElement1 a) = getInputRT a
 
+    toRT' (ButtonElement1 a e) =
+      (\e' -> Just $ RTInput (Button e') (Map.fromList a)) <$> (toRT e)
+
     toRT' (SelectElement1 a []) = Left ["Select without option elements"]
     toRT' (SelectElement1 a opts) = getSelectOpts a opts
 
@@ -65,9 +70,7 @@ parseToTokens inp = (tree, toRT tree)
         RTElement e (Map.fromList a) es
       (Left ls) -> Left ls
 
-    toRT' (TagLeaf (TagText t))
-      | T.null (T.strip t) = Right $ Nothing
-      | otherwise = Right $ Just $ RTText (T.strip t)
+    toRT' (TagLeaf (TagText t)) = Right $ Just $ RTText t
 
     toRT' (TagLeaf (TagOpen e a)) = case e of
       "input" -> getInputRT a
@@ -81,6 +84,13 @@ parseToTokens inp = (tree, toRT tree)
       <> "Col:" <> (tshow c) ]
 
 getInputRT a = case (List.lookup "type" a) of
+  (Just "button") -> Right $ Just $
+    RTInput (Button v) (Map.fromList a2)
+    where
+      c = maybe False (const True) $ List.lookup "disabled" a
+      v = maybe [] ((:[]) . RTText) $ List.lookup "value" a
+      a2 = filter (\(k,_) -> not ((k == "type") || (k == "value") || (k == "disabled"))) a
+
   (Just "checkbox") -> Right $ Just $
     RTInput (CheckBox c) (Map.fromList a2)
     where
@@ -123,12 +133,14 @@ getSelectOpts a os = case (lefts os2) of
 tshow :: (Show a) => a -> Text
 tshow = T.pack . show
 
+-- Make all tags names, and attribute keys lowercase
+-- Remove whitespace text nodes, and strip text
 transformF (TagBranch t a ts) = [TagBranch (T.toCaseFold t) a ts]
   where
     anew = map (\(k,v) -> (T.toCaseFold k, v)) a
 
 transformF a@(TagLeaf t) = case t of
-  (TagText t) -> if T.null (T.strip t) then [] else [a]
+  (TagText t) -> if T.null (T.strip t) then [] else [TagLeaf (TagText (T.strip t))]
   (TagOpen t a) -> [TagLeaf (TagOpen (T.toCaseFold t) anew)]
     where
       anew = map (\(k,v) -> (T.toCaseFold k, v)) a

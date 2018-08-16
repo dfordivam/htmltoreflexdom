@@ -123,3 +123,16 @@ renderRT (RTInput (DropDown sel opts) a) =
     confVal = text "def &" <+> parens ("fileInputConfig_attributes .~"
         <+> constDyn (text (show a)))
     dmapVal = constDyn (text "fromList" <+> (text $ show opts))
+
+renderRT (RTInput (Button v) a) =
+  letBlk ls $$
+  (el <+> attrName <+> do')
+    $$ (nest 2 (renderReflexTree v))
+  where
+    el = text "elAttr'" <+> dq "button"
+    attrName = txt ("btnAttrs")
+    ls = (attrName, (text (show a)))
+         : []
+    do' = case v of
+      [] -> text "$ return ()"
+      _ -> text "$ do"
